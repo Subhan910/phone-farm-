@@ -57,8 +57,8 @@ jobs:
                   applicationId 'id.cfm.webui'
                   minSdk 21
                   targetSdk 34
-                  versionCode 11
-                  versionName '3.2'
+                  versionCode 12
+                  versionName '3.3'
               }
 
               signingConfigs {
@@ -422,7 +422,7 @@ jobs:
           EOF_FILE
           cat > app/src/main/java/id/cfm/webui/MainActivity.java <<'EOF_FILE'
           package id.cfm.webui;
-
+          
           import android.Manifest;
           import android.app.Activity;
           import android.app.Dialog;
@@ -521,15 +521,15 @@ jobs:
           import java.util.regex.Pattern;
           import org.json.JSONArray;
           import org.json.JSONObject;
-
+          
           /**
            * Cangkang aplikasi. Fitur-fitur (Catatan, IP, Kalkulator, dst.) bukan lagi kode Java,
            * melainkan berkas HTML di folder fitur aplikasi. Pasang / ganti HTML = upgrade fitur,
            * tanpa memasang ulang APK. Lihat assets/PLUGIN_GUIDE.md untuk format fitur.
            */
           public class MainActivity extends Activity {
-
-              private static final String APP_VER = "3.2";
+          
+              private static final String APP_VER = "3.3";
               private static final String HOME_HOST = "192.168.43.1";
               private static final String HOME = "http://192.168.43.1/";
               private static final String NAS_HOME = "http://192.168.43.1:8088/";
@@ -543,7 +543,7 @@ jobs:
               private static final Pattern TAG_META = Pattern.compile("<meta\\b[^>]*>", Pattern.CASE_INSENSITIVE);
               private static final String BACK_JS =
                       "(function(){try{return !!(window.CFM&&window.CFM._back&&window.CFM._back())}catch(e){return false}})()";
-
+          
               private WebView web, nas;
               private FrameLayout body;
               private TextView title;
@@ -557,7 +557,7 @@ jobs:
               private View customView;
               private WebChromeClient.CustomViewCallback customCb;
               private int savedUi;
-
+          
               // ---- UI ----
               private final Handler ui = new Handler(Looper.getMainLooper());
               private FrameLayout shell, topTile, drawerLayer;
@@ -578,14 +578,14 @@ jobs:
                       ui.postDelayed(this, 9000);
                   }
               };
-
+          
               // ---- fitur (plugin HTML) ----
               private static class Plugin {
                   String id = "", name = "", icon = "", ver = "1", updateUrl = "";
                   int order = 100;
                   File file;
               }
-
+          
               private File plugDir;
               private final Map<String, Plugin> plugins = new LinkedHashMap<>();
               private final Map<String, Plugin> bundled = new HashMap<>();
@@ -599,21 +599,21 @@ jobs:
               private LinearLayout manageList;
               private PluginBridge saveBridge;
               private String saveCid, saveText;
-
+          
               // ---- jaringan ----
               private ConnectivityManager cm;
               private ConnectivityManager.NetworkCallback cb;
               private final Map<Network, String> names = new HashMap<>();
               private final StringBuilder logSb = new StringBuilder();
               private volatile String logSnap = "";
-
+          
               @Override
               protected void onCreate(Bundle b) {
                   super.onCreate(b);
                   Window w = getWindow();
                   w.setStatusBarColor(SURF);
                   w.setNavigationBarColor(BG);
-
+          
                   nasPrefs = getSharedPreferences("nas", MODE_PRIVATE);
                   plugPrefs = getSharedPreferences("plugins", MODE_PRIVATE);
                   removed.addAll(plugPrefs.getStringSet("removed", new HashSet<String>()));
@@ -627,7 +627,7 @@ jobs:
                   scanPlugins();
                   chrome = makeChrome();
                   pluginClient = makePluginClient();
-
+          
                   shell = new FrameLayout(this);
                   shell.setBackgroundColor(BG);
                   LinearLayout root = new LinearLayout(this);
@@ -640,7 +640,7 @@ jobs:
                   shell.addView(root, new FrameLayout.LayoutParams(-1, -1));
                   shell.addView(buildDrawerLayer(), new FrameLayout.LayoutParams(-1, -1));
                   shell.addView(buildSnack());
-
+          
                   // WebUI (Clash)
                   web = new WebView(this);
                   web.setBackgroundColor(BG);
@@ -654,7 +654,7 @@ jobs:
                       public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
                           if (r.isForMainFrame()) showError(v);
                       }
-
+          
                       @SuppressWarnings("deprecation")
                       @Override
                       public void onReceivedError(WebView v, int code, String desc, String failingUrl) {
@@ -663,23 +663,23 @@ jobs:
                   });
                   web.setWebChromeClient(chrome);
                   if (b != null) web.restoreState(b); else web.loadUrl(HOME);
-
+          
                   body.addView(web, new FrameLayout.LayoutParams(-1, -1));
                   body.addView(buildNas(), new FrameLayout.LayoutParams(-1, -1));
                   body.addView(buildManager(), new FrameLayout.LayoutParams(-1, -1));
-
+          
                   setContentView(shell);
                   show("webui");
                   startNetMonitor();
               }
-
+          
               // ---------- util UI ----------
               private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
-
+          
               private void toast(String m) { flash(m, 2200); }
-
+          
               private void toastL(String m) { flash(m, 3800); }
-
+          
               private void flash(final String m, final int ms) {
                   runOnUiThread(() -> {
                       if (snack == null) return;
@@ -693,33 +693,33 @@ jobs:
                       ui.postDelayed(snackHide, ms);
                   });
               }
-
+          
               private GradientDrawable shape(int color, int r) {
                   GradientDrawable g = new GradientDrawable();
                   g.setColor(color);
                   g.setCornerRadius(dp(r));
                   return g;
               }
-
+          
               private GradientDrawable box(int color, int r, int stroke) {
                   GradientDrawable g = shape(color, r);
                   g.setStroke(dp(1), stroke);
                   return g;
               }
-
+          
               private GradientDrawable dotShape(int color) {
                   GradientDrawable g = new GradientDrawable();
                   g.setShape(GradientDrawable.OVAL);
                   g.setColor(color);
                   return g;
               }
-
+          
               // latar + efek riak yang mengikuti sudut membulat (stroke 0 = tanpa garis tepi)
               private Drawable rip(int bg, int r, int stroke) {
                   Drawable content = stroke == 0 ? shape(bg, r) : box(bg, r, stroke);
                   return new RippleDrawable(ColorStateList.valueOf(0x24FFFFFF), content, shape(Color.WHITE, r));
               }
-
+          
               private TextView text(String s, float sp, int color, boolean bold) {
                   TextView t = new TextView(this);
                   t.setText(s);
@@ -728,14 +728,14 @@ jobs:
                   if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
                   return t;
               }
-
+          
               private TextView caps(String s) {
                   TextView t = text(s, 11, DIM, true);
                   t.setLetterSpacing(0.1f);
                   t.setPadding(dp(6), dp(18), dp(6), dp(8));
                   return t;
               }
-
+          
               private ImageView icon(int res, int tint, int size) {
                   ImageView v = new ImageView(this);
                   v.setImageResource(res);
@@ -743,7 +743,7 @@ jobs:
                   v.setLayoutParams(new LinearLayout.LayoutParams(dp(size), dp(size)));
                   return v;
               }
-
+          
               private TextView chip(String t, int c) {
                   TextView x = text(t, 11, c, true);
                   x.setSingleLine(true);
@@ -754,14 +754,14 @@ jobs:
                   x.setLayoutParams(p);
                   return x;
               }
-
+          
               private int iconRes(String key) {
                   if (key.equals("webui")) return R.drawable.ic_grid;
                   if (key.equals("nas")) return R.drawable.ic_nas;
                   if (key.equals("manage")) return R.drawable.ic_tune;
                   return 0;
               }
-
+          
               private void fillTile(FrameLayout f, String key, int tint) {
                   f.removeAllViews();
                   int r = iconRes(key);
@@ -775,34 +775,34 @@ jobs:
                       f.addView(t, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
                   }
               }
-
+          
               private FrameLayout tileFor(String key, int radius, int bg, int tint) {
                   FrameLayout f = new FrameLayout(this);
                   f.setBackground(shape(bg, radius));
                   fillTile(f, key, tint);
                   return f;
               }
-
+          
               // ---------- bilah atas, progres, status server ----------
               private View topBar() {
                   LinearLayout t = new LinearLayout(this);
                   t.setGravity(Gravity.CENTER_VERTICAL);
                   t.setBackgroundColor(SURF);
                   t.setPadding(dp(6), 0, dp(12), 0);
-
+          
                   ImageView m = icon(R.drawable.ic_menu, FG, 22);
                   m.setPadding(dp(11), dp(11), dp(11), dp(11));
                   m.setBackground(new RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), null, shape(Color.WHITE, 22)));
                   m.setContentDescription("Menu");
                   m.setOnClickListener(v -> openDrawer());
                   t.addView(m, new LinearLayout.LayoutParams(dp(44), dp(44)));
-
+          
                   topTile = new FrameLayout(this);
                   topTile.setBackground(shape(CARD2, 10));
                   LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(dp(32), dp(32));
                   tp.setMargins(dp(6), 0, dp(12), 0);
                   t.addView(topTile, tp);
-
+          
                   LinearLayout col = new LinearLayout(this);
                   col.setOrientation(LinearLayout.VERTICAL);
                   col.setGravity(Gravity.CENTER_VERTICAL);
@@ -815,7 +815,7 @@ jobs:
                   col.addView(title);
                   col.addView(subtitle);
                   t.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
-
+          
                   LinearLayout chip = new LinearLayout(this);
                   chip.setGravity(Gravity.CENTER_VERTICAL);
                   chip.setPadding(dp(11), 0, dp(12), 0);
@@ -835,13 +835,13 @@ jobs:
                   setServer(srv);
                   return t;
               }
-
+          
               private void setHeader(String key) {
                   title.setText(nameOf(key));
                   subtitle.setText(subOf(key));
                   fillTile(topTile, key, ACC);
               }
-
+          
               private View progressBar() {
                   FrameLayout f = new FrameLayout(this);
                   f.setBackgroundColor(LINE);
@@ -852,14 +852,14 @@ jobs:
                   f.addView(progBar, new FrameLayout.LayoutParams(-1, -1));
                   return f;
               }
-
+          
               private void resetLoadBar() {
                   if (progBar == null) return;
                   progBar.animate().cancel();
                   progBar.setScaleX(0f);
                   progBar.setAlpha(1f);
               }
-
+          
               private void setLoadBar(int p) {
                   if (progBar == null) return;
                   progBar.animate().cancel();
@@ -873,7 +873,7 @@ jobs:
                       progBar.animate().scaleX(Math.max(0.08f, p / 100f)).setStartDelay(0).setDuration(200).start();
                   }
               }
-
+          
               private boolean isCurrent(WebView v) {
                   if (cur == null) return false;
                   if (cur.equals("webui")) return v == web;
@@ -881,7 +881,7 @@ jobs:
                   if (cur.startsWith("p:")) return v == pluginViews.get(cur.substring(2));
                   return false;
               }
-
+          
               private void setServer(int st) {
                   srv = st;
                   int c = st == 1 ? OK : st == 2 ? BAD : DIM;
@@ -893,14 +893,14 @@ jobs:
                       srvTxt.setText(st == 1 ? "Server CFM aktif" : st == 2 ? "Server tidak terjangkau" : "Memeriksa server...");
                   }
               }
-
+          
               private void pollStatus() {
                   new Thread(() -> {
                       final String r = probe(HOME_HOST, 80, 1500);
                       runOnUiThread(() -> setServer("open".equals(r) ? 1 : 2));
                   }).start();
               }
-
+          
               private View buildSnack() {
                   snack = text("", 14, FG, false);
                   snack.setPadding(dp(18), dp(12), dp(18), dp(12));
@@ -913,7 +913,7 @@ jobs:
                   snack.setLayoutParams(p);
                   return snack;
               }
-
+          
               // ---------- navigasi samping ----------
               private List<String> keys() {
                   List<String> k = new ArrayList<>();
@@ -923,7 +923,7 @@ jobs:
                   k.add("manage");
                   return k;
               }
-
+          
               private String nameOf(String key) {
                   if (key.equals("webui")) return "WebUI";
                   if (key.equals("nas")) return "NAS HP";
@@ -931,7 +931,7 @@ jobs:
                   Plugin p = plugins.get(key.substring(2));
                   return p == null ? key : p.name;
               }
-
+          
               private String subOf(String key) {
                   if (key.equals("webui")) return "Dasbor Clash · " + HOME_HOST;
                   if (key.equals("nas")) return "Penyimpanan WebDAV · port 8088";
@@ -939,7 +939,7 @@ jobs:
                   Plugin p = plugins.get(key.substring(2));
                   return p == null ? "" : "Fitur · v" + p.ver;
               }
-
+          
               private View buildDrawerLayer() {
                   drawerLayer = new FrameLayout(this);
                   drawerLayer.setVisibility(View.GONE);
@@ -959,10 +959,10 @@ jobs:
                   drawerLayer.addView(drawer, new FrameLayout.LayoutParams(drawerW, -1, Gravity.START));
                   return drawerLayer;
               }
-
+          
               private void rebuildDrawer() {
                   drawer.removeAllViews();
-
+          
                   LinearLayout hd = new LinearLayout(this);
                   hd.setOrientation(LinearLayout.VERTICAL);
                   hd.setPadding(dp(20), dp(22), dp(20), dp(8));
@@ -982,7 +982,7 @@ jobs:
                   np.setMargins(dp(14), 0, 0, 0);
                   hr.addView(nm, np);
                   hd.addView(hr);
-
+          
                   LinearLayout st = new LinearLayout(this);
                   st.setGravity(Gravity.CENTER_VERTICAL);
                   st.setPadding(dp(14), dp(11), dp(14), dp(11));
@@ -998,7 +998,7 @@ jobs:
                   stp.setMargins(0, dp(18), 0, 0);
                   hd.addView(st, stp);
                   drawer.addView(hd, new LinearLayout.LayoutParams(-1, -2));
-
+          
                   ScrollView sv = new ScrollView(this);
                   sv.setVerticalScrollBarEnabled(false);
                   LinearLayout list = new LinearLayout(this);
@@ -1024,13 +1024,13 @@ jobs:
                   list.addView(navItem("manage"));
                   sv.addView(list, new FrameLayout.LayoutParams(-1, -2));
                   drawer.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1));
-
+          
                   TextView ft = text("v" + APP_VER + "  ·  Fitur HTML berjalan lokal di perangkat ini", 11.5f, DIM, false);
                   ft.setPadding(dp(22), dp(12), dp(22), dp(16));
                   drawer.addView(ft);
                   setServer(srv);
               }
-
+          
               private View navItem(final String key) {
                   boolean act = key.equals(cur);
                   LinearLayout row = new LinearLayout(this);
@@ -1051,13 +1051,13 @@ jobs:
                   row.setLayoutParams(rp);
                   return row;
               }
-
+          
               private View dotView(int c) {
                   View v = new View(this);
                   v.setBackground(dotShape(c));
                   return v;
               }
-
+          
               private void openDrawer() {
                   if (drawerOpen) return;
                   rebuildDrawer();
@@ -1069,7 +1069,7 @@ jobs:
                   drawer.animate().translationX(0f).setDuration(240).setInterpolator(new DecelerateInterpolator()).start();
                   pollStatus();
               }
-
+          
               private void closeDrawer() {
                   if (!drawerOpen) return;
                   drawerOpen = false;
@@ -1077,7 +1077,7 @@ jobs:
                   drawer.animate().translationX(-drawerW).setDuration(200)
                           .withEndAction(() -> { if (!drawerOpen) drawerLayer.setVisibility(View.GONE); }).start();
               }
-
+          
               private EditText edit(String hint) {
                   EditText e = new EditText(this);
                   e.setHint(hint);
@@ -1089,7 +1089,7 @@ jobs:
                   e.setInputType(InputType.TYPE_CLASS_TEXT);
                   return e;
               }
-
+          
               // ---------- dialog bergaya (pengganti AlertDialog.Builder) ----------
               private class Dlg {
                   private CharSequence title, msg, pos, neg;
@@ -1097,23 +1097,23 @@ jobs:
                   private CharSequence[] items;
                   private DialogInterface.OnClickListener posL, negL, itemL;
                   private DialogInterface.OnCancelListener cancelL;
-
+          
                   Dlg(Context c) { }
-
+          
                   Dlg setTitle(CharSequence t) { title = t; return this; }
-
+          
                   Dlg setMessage(CharSequence m) { msg = m; return this; }
-
+          
                   Dlg setView(View v) { view = v; return this; }
-
+          
                   Dlg setItems(CharSequence[] it, DialogInterface.OnClickListener l) { items = it; itemL = l; return this; }
-
+          
                   Dlg setPositiveButton(CharSequence t, DialogInterface.OnClickListener l) { pos = t; posL = l; return this; }
-
+          
                   Dlg setNegativeButton(CharSequence t, DialogInterface.OnClickListener l) { neg = t; negL = l; return this; }
-
+          
                   Dlg setOnCancelListener(DialogInterface.OnCancelListener l) { cancelL = l; return this; }
-
+          
                   Dlg show() {
                       final Dialog d = new Dialog(MainActivity.this);
                       d.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -1194,7 +1194,7 @@ jobs:
                       return this;
                   }
               }
-
+          
               private void show(String key) {
                   if (cur != null && cur.startsWith("p:") && !cur.equals(key)) dispatch(pluginViews.get(cur.substring(2)), "hide");
                   View target;
@@ -1223,7 +1223,7 @@ jobs:
                   target.setVisibility(View.VISIBLE);
                   if (key.startsWith("p:")) dispatch(pluginViews.get(key.substring(2)), "show");
               }
-
+          
               // halaman galat bergaya: dipakai WebUI dan NAS saat server tidak terjangkau
               private String errorPage(String head, String text, String[] steps, String url) {
                   StringBuilder s = new StringBuilder();
@@ -1251,17 +1251,17 @@ jobs:
                   s.append("</div><a href='").append(url).append("'>Coba lagi</a><div class='f'>CFM WebUI v").append(APP_VER).append("</div></div></body></html>");
                   return s.toString();
               }
-
+          
               private void showError(WebView v) {
                   String html = errorPage("Tidak bisa terhubung", "Aplikasi belum bisa menjangkau server CFM.",
                           new String[]{"Hotspot di HP server sedang aktif", "CFM (Clash) sedang berjalan", "HP ini terhubung ke hotspot tersebut"}, HOME);
                   v.loadDataWithBaseURL(HOME, html, "text/html", "UTF-8", null);
               }
-
+          
               private void copyText(String t) {
                   ((ClipboardManager) getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("cfm", t));
               }
-
+          
               private String pasteText() {
                   try {
                       ClipboardManager c = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
@@ -1273,12 +1273,12 @@ jobs:
                   } catch (Exception ignored) { }
                   return "";
               }
-
+          
               private void share(String text) {
                   Intent i = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
                   startActivity(Intent.createChooser(i, "Bagikan"));
               }
-
+          
               private void openExternal(String url) {
                   if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) return;
                   try {
@@ -1287,7 +1287,7 @@ jobs:
                       toast("Tidak ada aplikasi untuk membuka tautan");
                   }
               }
-
+          
               // ---------- berkas & jaringan dasar ----------
               private static byte[] readAll(InputStream in, int max, boolean strict) throws IOException {
                   ByteArrayOutputStream bo = new ByteArrayOutputStream();
@@ -1303,25 +1303,25 @@ jobs:
                   }
                   return bo.toByteArray();
               }
-
+          
               private String readAsset(String path) throws IOException {
                   try (InputStream in = getAssets().open(path)) {
                       return new String(readAll(in, MAX_HTML, true), "UTF-8");
                   }
               }
-
+          
               private static String readFile(File f) throws IOException {
                   try (InputStream in = new FileInputStream(f)) {
                       return new String(readAll(in, MAX_HTML, true), "UTF-8");
                   }
               }
-
+          
               private static void writeFile(File f, String s) throws IOException {
                   try (FileOutputStream os = new FileOutputStream(f)) {
                       os.write(s.getBytes("UTF-8"));
                   }
               }
-
+          
               private String fetchText(String url) throws IOException {
                   String u = url;
                   for (int i = 0; i < 5; i++) {
@@ -1349,7 +1349,7 @@ jobs:
                   }
                   throw new IOException("Terlalu banyak redirect");
               }
-
+          
               private static String probe(String host, int port, int timeout) {
                   try (Socket k = new Socket()) {
                       k.connect(new InetSocketAddress(host, port), timeout);
@@ -1361,7 +1361,7 @@ jobs:
                       return m.contains("refused") ? "refused" : "error: " + m;
                   }
               }
-
+          
               // dipakai CFM.fetch(): HTTP dari sisi native (tanpa batasan CORS), hanya teks
               private static JSONObject httpFetch(String url, JSONObject o) throws Exception {
                   if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) throw new IOException("Hanya http/https");
@@ -1404,27 +1404,27 @@ jobs:
                       c.disconnect();
                   }
               }
-
+          
               private static String lit(Object v) {
                   if (v == null || v == JSONObject.NULL) return "null";
                   if (v instanceof Boolean || v instanceof Number) return v.toString();
                   String s = (v instanceof JSONObject || v instanceof JSONArray) ? v.toString() : JSONObject.quote(v.toString());
                   return s.replace(String.valueOf((char) 0x2028), "\\u2028").replace(String.valueOf((char) 0x2029), "\\u2029");
               }
-
+          
               // ---------- registri fitur ----------
               private static String attr(String tag, String n) {
                   Matcher m = Pattern.compile("(?<![\\w-])" + n + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)')", Pattern.CASE_INSENSITIVE).matcher(tag);
                   if (!m.find()) return null;
                   return m.group(1) != null ? m.group(1) : m.group(2);
               }
-
+          
               private static String slug(String s) {
                   String r = s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
                   if (r.length() > 32) r = r.substring(0, 32).replaceAll("-+$", "");
                   return r.isEmpty() ? "fitur" : r;
               }
-
+          
               private static List<Integer> nums(String v) {
                   List<Integer> l = new ArrayList<>();
                   for (String x : v.split("[^0-9]+")) {
@@ -1433,7 +1433,7 @@ jobs:
                   }
                   return l;
               }
-
+          
               private static int cmpVer(String a, String b) {
                   List<Integer> x = nums(a), y = nums(b);
                   for (int i = 0; i < Math.max(x.size(), y.size()); i++) {
@@ -1442,7 +1442,7 @@ jobs:
                   }
                   return 0;
               }
-
+          
               private Plugin parse(String html, String fb) {
                   Plugin p = new Plugin();
                   String id = null;
@@ -1476,14 +1476,14 @@ jobs:
                   if (p.icon.isEmpty()) p.icon = "\uD83E\uDDE9";
                   return p;
               }
-
+          
               private void migrateNotes() {
                   SharedPreferences old = getSharedPreferences("catatan", MODE_PRIVATE);
                   SharedPreferences nu = getSharedPreferences("plug_catatan", MODE_PRIVATE);
                   String n = old.getString("n", null);
                   if (n != null && nu.getString("n", null) == null) nu.edit().putString("n", n).apply();
               }
-
+          
               private void loadBundledMeta() {
                   try {
                       String[] fs = getAssets().list("plugins");
@@ -1498,14 +1498,14 @@ jobs:
                       }
                   } catch (Exception ignored) { }
               }
-
+          
               private void writeInstall(String id, String html) throws IOException {
                   File f = new File(plugDir, id + ".html"), tmp = new File(plugDir, id + ".tmp"), bak = new File(plugDir, id + ".bak");
                   writeFile(tmp, html);
                   if (f.exists()) { bak.delete(); f.renameTo(bak); }
                   if (!tmp.renameTo(f)) throw new IOException("Gagal menyimpan fitur");
               }
-
+          
               private void seedPlugins() {
                   for (String id : bundled.keySet()) {
                       if (removed.contains(id)) continue;
@@ -1519,7 +1519,7 @@ jobs:
                       }
                   }
               }
-
+          
               private void scanPlugins() {
                   plugins.clear();
                   File[] fs = plugDir.listFiles();
@@ -1540,15 +1540,15 @@ jobs:
                   Collections.sort(l, (a, b2) -> a.order != b2.order ? Integer.compare(a.order, b2.order) : a.name.compareToIgnoreCase(b2.name));
                   for (Plugin p : l) plugins.put(p.id, p);
               }
-
+          
               private String updateUrlOf(Plugin p) {
                   return !p.updateUrl.isEmpty() ? p.updateUrl : plugPrefs.getString("src_" + p.id, "");
               }
-
+          
               private void saveRemoved() {
                   plugPrefs.edit().putStringSet("removed", new HashSet<>(removed)).apply();
               }
-
+          
               // ---------- WebView fitur ----------
               // fitur yang mendeklarasikan <meta name="cfm-ui"> mendapat UI kit (cfm-ui.css)
               private boolean wantsUi(String html) {
@@ -1559,7 +1559,7 @@ jobs:
                   }
                   return false;
               }
-
+          
               private String inject(String html) {
                   String tag = "<script>" + prelude + "</script>" + (wantsUi(html) ? "<style id=\"cfm-ui\">" + uiCss + "</style>" : "");
                   Matcher m = Pattern.compile("<head\\b[^>]*>", Pattern.CASE_INSENSITIVE).matcher(html);
@@ -1570,7 +1570,7 @@ jobs:
                   if (m.find()) return html.substring(0, m.end()) + tag + html.substring(m.end());
                   return tag + html;
               }
-
+          
               private WebView pluginView(String id) {
                   WebView v = pluginViews.get(id);
                   if (v != null) return v;
@@ -1586,6 +1586,8 @@ jobs:
                   s.setAllowFileAccess(false);
                   s.setAllowContentAccess(false);
                   s.setMediaPlaybackRequiresUserGesture(false);
+                  // The phone-farm preview is an authenticated local HTTP MJPEG stream.
+                  s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   v.addJavascriptInterface(new PluginBridge(id, v), "CFMNative");
                   v.setWebViewClient(pluginClient);
                   v.setWebChromeClient(chrome);
@@ -1596,18 +1598,18 @@ jobs:
                   v.loadDataWithBaseURL(ORIGIN + id + "/", inject(html), "text/html", "UTF-8", null);
                   return v;
               }
-
+          
               private void dropView(String id) {
                   WebView v = pluginViews.remove(id);
                   if (v == null) return;
                   body.removeView(v);
                   v.destroy();
               }
-
+          
               private void dispatch(WebView v, String name) {
                   if (v != null) v.evaluateJavascript("window.dispatchEvent(new Event('cfm:" + name + "'))", null);
               }
-
+          
               private WebViewClient makePluginClient() {
                   return new WebViewClient() {
                       private boolean external(String url) {
@@ -1615,18 +1617,18 @@ jobs:
                           openExternal(url);
                           return true;
                       }
-
+          
                       @Override
                       public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                           return external(r.getUrl().toString());
                       }
-
+          
                       @SuppressWarnings("deprecation")
                       @Override
                       public boolean shouldOverrideUrlLoading(WebView v, String url) {
                           return external(url);
                       }
-
+          
                       @Override
                       public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
                           if ("plugin.cfm.local".equals(r.getUrl().getHost())) {
@@ -1635,7 +1637,7 @@ jobs:
                           }
                           return null;
                       }
-
+          
                       @Override
                       public boolean onRenderProcessGone(WebView v, RenderProcessGoneDetail d) {
                           String found = null;
@@ -1652,7 +1654,7 @@ jobs:
                       }
                   };
               }
-
+          
               private WebChromeClient makeChrome() {
                   return new WebChromeClient() {
                       @Override
@@ -1671,22 +1673,22 @@ jobs:
                                   | View.SYSTEM_UI_FLAG_FULLSCREEN
                                   | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
                       }
-
+          
                       @Override
                       public void onProgressChanged(WebView v, int p) {
                           if (isCurrent(v)) setLoadBar(p);
                       }
-
+          
                       @Override
                       public void onHideCustomView() {
                           hideFull();
                       }
-
+          
                       @Override
                       public Bitmap getDefaultVideoPoster() {
                           return Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
                       }
-
+          
                       @Override
                       public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
                           if (fileCb != null) fileCb.onReceiveValue(null);
@@ -1700,7 +1702,7 @@ jobs:
                           }
                           return true;
                       }
-
+          
                       @Override
                       public boolean onJsAlert(WebView v, String url, String msg, final JsResult r) {
                           new Dlg(MainActivity.this).setMessage(msg)
@@ -1708,7 +1710,7 @@ jobs:
                                   .setOnCancelListener(d -> r.cancel()).show();
                           return true;
                       }
-
+          
                       @Override
                       public boolean onJsConfirm(WebView v, String url, String msg, final JsResult r) {
                           new Dlg(MainActivity.this).setMessage(msg)
@@ -1717,7 +1719,7 @@ jobs:
                                   .setOnCancelListener(d -> r.cancel()).show();
                           return true;
                       }
-
+          
                       @Override
                       public boolean onJsPrompt(WebView v, String url, String msg, String def, final JsPromptResult r) {
                           final EditText e = edit("");
@@ -1733,26 +1735,26 @@ jobs:
                       }
                   };
               }
-
+          
               // ---------- jembatan JS <-> native untuk fitur ----------
               private class PluginBridge {
                   private final String pid;
                   private final WebView wv;
-
+          
                   PluginBridge(String pid, WebView wv) {
                       this.pid = pid;
                       this.wv = wv;
                   }
-
+          
                   private SharedPreferences store() {
                       return getSharedPreferences("plug_" + pid, MODE_PRIVATE);
                   }
-
+          
                   private void reply(String cid, boolean ok, Object val) {
                       final String js = "window.__cfm_done&&window.__cfm_done(" + JSONObject.quote(cid) + "," + ok + "," + lit(val) + ")";
                       runOnUiThread(() -> wv.evaluateJavascript(js, null));
                   }
-
+          
                   @JavascriptInterface
                   public void invoke(final String cid, final String fn, final String argsJson) {
                       try {
@@ -1907,13 +1909,13 @@ jobs:
                       }
                   }
               }
-
+          
               private void startFarmAgent() {
                   Intent i = new Intent(this, FarmAgentService.class);
                   i.setAction(FarmAgentService.ACTION_START);
                   if (Build.VERSION.SDK_INT >= 26) startForegroundService(i); else startService(i);
               }
-
+          
               private void requestFarmCapture() {
                   startFarmAgent();
                   android.media.projection.MediaProjectionManager mpm =
@@ -1921,7 +1923,7 @@ jobs:
                   if (mpm == null) throw new IllegalStateException("Fitur berbagi layar tidak tersedia di Android ini");
                   startActivityForResult(mpm.createScreenCaptureIntent(), REQ_CAPTURE);
               }
-
+          
               private void startSave(PluginBridge br, String cid, String name, String text) {
                   if (saveBridge != null) saveBridge.reply(saveCid, true, false);
                   saveBridge = br;
@@ -1939,7 +1941,7 @@ jobs:
                       toastL("Tidak ada aplikasi pemilih file");
                   }
               }
-
+          
               @Override
               protected void onActivityResult(int req, int res, Intent data) {
                   super.onActivityResult(req, res, data);
@@ -2005,7 +2007,7 @@ jobs:
                       }).start();
                   }
               }
-
+          
               private String displayName(Uri u) {
                   String n = null;
                   try (Cursor c = getContentResolver().query(u, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
@@ -2014,7 +2016,7 @@ jobs:
                   if (n == null) n = u.getLastPathSegment();
                   return n == null ? "" : n;
               }
-
+          
               // ---------- Kelola Fitur ----------
               private View buildManager() {
                   ScrollView sv = new ScrollView(this);
@@ -2028,7 +2030,7 @@ jobs:
                   refreshManager();
                   return sv;
               }
-
+          
               private View action(int iconRes, String label, boolean primary, View.OnClickListener l) {
                   LinearLayout t = new LinearLayout(this);
                   t.setOrientation(LinearLayout.VERTICAL);
@@ -2049,7 +2051,7 @@ jobs:
                   t.setLayoutParams(p);
                   return t;
               }
-
+          
               private View actionRow(View a, View b, View c) {
                   LinearLayout r = new LinearLayout(this);
                   r.addView(a);
@@ -2060,11 +2062,11 @@ jobs:
                   r.setLayoutParams(p);
                   return r;
               }
-
+          
               private void refreshManager() {
                   if (manageList == null) return;
                   manageList.removeAllViews();
-
+          
                   LinearLayout hero = new LinearLayout(this);
                   hero.setOrientation(LinearLayout.VERTICAL);
                   hero.setPadding(dp(20), dp(18), dp(20), dp(18));
@@ -2081,7 +2083,7 @@ jobs:
                   hd.setLineSpacing(0f, 1.15f);
                   hero.addView(hd);
                   manageList.addView(hero, new LinearLayout.LayoutParams(-1, -2));
-
+          
                   manageList.addView(caps("TAMBAH & KELOLA"));
                   manageList.addView(actionRow(
                           action(R.drawable.ic_add, "Impor HTML", true, v -> pickHtml()),
@@ -2091,7 +2093,7 @@ jobs:
                           action(R.drawable.ic_refresh, "Cek pembaruan", false, v -> checkUpdates(new ArrayList<>(plugins.values()))),
                           action(R.drawable.ic_book, "Panduan AI", false, v -> copyGuide()),
                           action(R.drawable.ic_restore, "Pulihkan", false, v -> restoreBundled())));
-
+          
                   manageList.addView(caps("DAFTAR FITUR"));
                   if (plugins.isEmpty()) {
                       TextView e = text("Belum ada fitur. Impor file HTML dengan tombol di atas.", 14, DIM, false);
@@ -2105,14 +2107,14 @@ jobs:
                       card.setGravity(Gravity.CENTER_VERTICAL);
                       card.setPadding(dp(12), dp(12), dp(6), dp(12));
                       card.setBackground(rip(CARD, 16, LINE));
-
+          
                       FrameLayout tl = new FrameLayout(this);
                       tl.setBackground(shape(CARD2, 13));
                       TextView em = text(p.icon, 22, FG, false);
                       em.setGravity(Gravity.CENTER);
                       tl.addView(em, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
                       card.addView(tl, new LinearLayout.LayoutParams(dp(46), dp(46)));
-
+          
                       LinearLayout col = new LinearLayout(this);
                       col.setOrientation(LinearLayout.VERTICAL);
                       TextView nm = text(p.name, 15.5f, FG, true);
@@ -2130,18 +2132,18 @@ jobs:
                       LinearLayout.LayoutParams colp = new LinearLayout.LayoutParams(0, -2, 1);
                       colp.setMargins(dp(12), 0, dp(4), 0);
                       card.addView(col, colp);
-
+          
                       ImageView more = icon(R.drawable.ic_more, DIM, 20);
                       more.setPadding(dp(8), dp(8), dp(8), dp(8));
                       card.addView(more, new LinearLayout.LayoutParams(dp(36), dp(36)));
-
+          
                       card.setOnClickListener(v -> pluginActions(p));
                       LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
                       cp.setMargins(0, 0, 0, dp(8));
                       manageList.addView(card, cp);
                   }
               }
-
+          
               private void pluginActions(final Plugin p) {
                   final List<String> ls = new ArrayList<>();
                   final List<Runnable> acts = new ArrayList<>();
@@ -2170,7 +2172,7 @@ jobs:
                   new Dlg(this).setTitle((p.icon + " " + p.name).trim())
                           .setItems(ls.toArray(new String[0]), (d, i) -> acts.get(i).run()).show();
               }
-
+          
               private void deletePlugin(Plugin p) {
                   dropView(p.id);
                   p.file.delete();
@@ -2181,7 +2183,7 @@ jobs:
                   refreshManager();
                   toast("Fitur dihapus");
               }
-
+          
               private void rollback(Plugin p) {
                   File f = new File(plugDir, p.id + ".html"), bak = new File(plugDir, p.id + ".bak"), tmp = new File(plugDir, p.id + ".tmp");
                   if (!bak.exists()) return;
@@ -2193,7 +2195,7 @@ jobs:
                   refreshManager();
                   toast("Versi sebelumnya dikembalikan");
               }
-
+          
               private void resetBundled(Plugin p) {
                   try {
                       writeInstall(p.id, readAsset(bundledFile.get(p.id)));
@@ -2207,7 +2209,7 @@ jobs:
                       toast("Gagal: " + e.getMessage());
                   }
               }
-
+          
               private void restoreBundled() {
                   int n = 0;
                   removed.clear();
@@ -2220,7 +2222,7 @@ jobs:
                   refreshManager();
                   toast(n + " fitur bawaan dipulihkan");
               }
-
+          
               private void copyGuide() {
                   try {
                       copyText(readAsset("PLUGIN_GUIDE.md"));
@@ -2229,7 +2231,7 @@ jobs:
                       toast("Panduan tidak ditemukan");
                   }
               }
-
+          
               private void pickHtml() {
                   Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT)
                           .addCategory(Intent.CATEGORY_OPENABLE)
@@ -2241,13 +2243,13 @@ jobs:
                       toast("Tidak ada aplikasi pemilih file");
                   }
               }
-
+          
               private void pasteHtml() {
                   String t = pasteText();
                   if (t.trim().isEmpty()) { toast("Clipboard kosong"); return; }
                   enqueue(null, t, "");
               }
-
+          
               private void urlDialog() {
                   final EditText e = edit("https://.../fitur.html");
                   e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
@@ -2258,7 +2260,7 @@ jobs:
                           .setPositiveButton("Unduh", (d, w) -> downloadPlugin(e.getText().toString().trim()))
                           .setNegativeButton("Batal", null).show();
               }
-
+          
               private void downloadPlugin(final String url) {
                   if (!(url.startsWith("http://") || url.startsWith("https://"))) { toast("URL harus diawali http:// atau https://"); return; }
                   toast("Mengunduh...");
@@ -2274,13 +2276,13 @@ jobs:
                       }
                   }).start();
               }
-
+          
               // antrean pemasangan: tiap berkas dikonfirmasi satu per satu
               private void enqueue(String fb, String html, String src) {
                   installQ.add(new String[]{fb == null ? "" : fb, html, src == null ? "" : src});
                   if (!installing) nextInstall();
               }
-
+          
               private void nextInstall() {
                   String[] it = installQ.poll();
                   if (it == null) { installing = false; return; }
@@ -2318,7 +2320,7 @@ jobs:
                           .setOnCancelListener(d -> nextInstall())
                           .show();
               }
-
+          
               private void installNow(String id, String html, String src) throws IOException {
                   boolean was = ("p:" + id).equals(cur);
                   writeInstall(id, html);
@@ -2330,7 +2332,7 @@ jobs:
                   refreshManager();
                   if (was) show("p:" + id);
               }
-
+          
               // cek pembaruan lewat cfm-update-url (atau URL asal pemasangan)
               private void checkUpdates(final List<Plugin> targets) {
                   final List<Plugin> t = new ArrayList<>();
@@ -2360,7 +2362,7 @@ jobs:
                       runOnUiThread(() -> showUpdates(ups, f));
                   }).start();
               }
-
+          
               private void showUpdates(final List<String[]> ups, int fail) {
                   if (ups.isEmpty()) {
                       toast(fail > 0 ? "Tidak ada pembaruan (" + fail + " gagal dicek)" : "Semua fitur sudah versi terbaru");
@@ -2380,7 +2382,7 @@ jobs:
                           })
                           .setNegativeButton("Nanti", null).show();
               }
-
+          
               // ---------- NAS HP (WebDAV) ----------
               private View buildNas() {
                   nas = new WebView(this);
@@ -2401,17 +2403,17 @@ jobs:
                               askNasLogin(h);
                           }
                       }
-
+          
                       @Override
                       public void onPageFinished(WebView v, String url) {
                           nasTried = false;
                       }
-
+          
                       @Override
                       public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
                           if (r.isForMainFrame()) showNasError(v);
                       }
-
+          
                       @SuppressWarnings("deprecation")
                       @Override
                       public void onReceivedError(WebView v, int code, String desc, String failingUrl) {
@@ -2444,7 +2446,7 @@ jobs:
                   });
                   return nas;
               }
-
+          
               private void askNasLogin(final HttpAuthHandler h) {
                   LinearLayout l = new LinearLayout(this);
                   l.setOrientation(LinearLayout.VERTICAL);
@@ -2470,13 +2472,13 @@ jobs:
                           .setOnCancelListener(d -> h.cancel())
                           .show();
               }
-
+          
               private void showNasError(WebView v) {
                   String html = errorPage("NAS tidak terjangkau", "Penyimpanan WebDAV di HP server belum bisa dijangkau.",
                           new String[]{"HP ini terhubung ke hotspot HP server", "Modul CFM WebDAV sedang aktif", "Port 8088 tidak diblokir"}, NAS_HOME);
                   v.loadDataWithBaseURL(NAS_HOME, html, "text/html", "UTF-8", null);
               }
-
+          
               // ---------- layar penuh & pemutar eksternal ----------
               private void hideFull() {
                   if (customView == null) return;
@@ -2489,7 +2491,7 @@ jobs:
                   customCb = null;
                   if (c != null) c.onCustomViewHidden();
               }
-
+          
               private class NasBridge {
                   @JavascriptInterface
                   public void setLandscape(final boolean landscape) {
@@ -2497,7 +2499,7 @@ jobs:
                               ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                               : ActivityInfo.SCREEN_ORIENTATION_SENSOR));
                   }
-
+          
                   @JavascriptInterface
                   public void openExternal(final String path, final String mime) {
                       runOnUiThread(() -> {
@@ -2515,7 +2517,7 @@ jobs:
                       });
                   }
               }
-
+          
               // ---------- pemantau jaringan (log untuk fitur IP & Jaringan) ----------
               private String type(Network n) {
                   NetworkCapabilities c = cm.getNetworkCapabilities(n);
@@ -2526,7 +2528,7 @@ jobs:
                   if (c.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) return "ETHERNET";
                   return "OTHER";
               }
-
+          
               private String snap() {
                   StringBuilder sb = new StringBuilder();
                   try {
@@ -2547,7 +2549,7 @@ jobs:
                   }
                   return sb.length() == 0 ? "(tidak ada jaringan aktif)" : sb.toString();
               }
-
+          
               private void log(final String s) {
                   final String line = "[" + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()) + "] " + s + "\n";
                   runOnUiThread(() -> {
@@ -2557,7 +2559,7 @@ jobs:
                       for (WebView v : pluginViews.values()) dispatch(v, "net");
                   });
               }
-
+          
               private void startNetMonitor() {
                   try {
                       cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
@@ -2574,7 +2576,7 @@ jobs:
                               names.put(n, name);
                               log("Network up " + name + ", address: " + a + ", dns: " + d);
                           }
-
+          
                           @Override
                           public void onLost(Network n) {
                               log("Network down " + names.remove(n));
@@ -2585,14 +2587,14 @@ jobs:
                       logSnap = "Gagal memantau jaringan: " + e + "\n";
                   }
               }
-
+          
               // ---------- siklus hidup ----------
               @Override
               protected void onSaveInstanceState(Bundle out) {
                   super.onSaveInstanceState(out);
                   web.saveState(out);
               }
-
+          
               @Override
               protected void onResume() {
                   super.onResume();
@@ -2602,7 +2604,7 @@ jobs:
                   nas.onResume();
                   for (WebView v : pluginViews.values()) v.onResume();
               }
-
+          
               @Override
               protected void onPause() {
                   ui.removeCallbacks(statusTick);
@@ -2611,7 +2613,7 @@ jobs:
                   for (WebView v : pluginViews.values()) v.onPause();
                   super.onPause();
               }
-
+          
               @Override
               public void onBackPressed() {
                   if (customView != null) { hideFull(); return; }
@@ -2630,7 +2632,7 @@ jobs:
                   }
                   show("webui");
               }
-
+          
               @Override
               protected void onDestroy() {
                   try { if (cm != null && cb != null) cm.unregisterNetworkCallback(cb); } catch (Exception ignored) { }
@@ -3869,6 +3871,8 @@ jobs:
           import java.util.Locale;
           import java.util.Map;
           import java.util.UUID;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
           
           public class FarmAgentService extends Service {
               public static final String ACTION_START = "id.cfm.webui.farm.START";
@@ -3882,10 +3886,12 @@ jobs:
               private static volatile boolean running;
               private static volatile byte[] latestJpeg;
               private static volatile boolean captureReady;
+              private static volatile long frameSequence;
           
               private volatile boolean stopping;
               private ServerSocket serverSocket;
               private Thread serverThread;
+              private ExecutorService clientPool;
               private MediaProjection projection;
               private VirtualDisplay virtualDisplay;
               private ImageReader imageReader;
@@ -3897,6 +3903,11 @@ jobs:
                   super.onCreate();
                   active = this;
                   running = true;
+                  clientPool = Executors.newFixedThreadPool(8, r -> {
+                      Thread t = new Thread(r, "CFM-Farm-Client");
+                      t.setDaemon(true);
+                      return t;
+                  });
                   tokenFor(this);
                   deviceIdFor(this);
               }
@@ -3950,10 +3961,21 @@ jobs:
                           serverSocket.setSoTimeout(1000);
                           while (!stopping) {
                               try {
-                                  Socket client = serverSocket.accept();
+                                  final Socket client = serverSocket.accept();
                                   client.setSoTimeout(5000);
-                                  try (Socket c = client) { handleClient(c); }
-                                  catch (Exception ignored) { }
+                                  ExecutorService pool = clientPool;
+                                  if (pool == null || pool.isShutdown()) {
+                                      try { client.close(); } catch (Exception ignored) { }
+                                      continue;
+                                  }
+                                  try {
+                                      pool.execute(() -> {
+                                          try (Socket c = client) { handleClient(c); }
+                                          catch (Exception ignored) { }
+                                      });
+                                  } catch (RuntimeException rejected) {
+                                      try { client.close(); } catch (Exception ignored) { }
+                                  }
                               } catch (java.net.SocketTimeoutException ignored) { }
                           }
                       } catch (Exception e) {
@@ -4023,6 +4045,10 @@ jobs:
                       sendJson(socket, 401, new JSONObject().put("ok", false).put("error", "Token salah atau tidak ada"));
                       return;
                   }
+                  if ("GET".equals(r.method) && "/api/stream".equals(path)) {
+                      streamScreen(socket);
+                      return;
+                  }
                   if ("GET".equals(r.method) && "/api/screen".equals(path)) {
                       byte[] jpg = latestJpeg;
                       if (jpg == null || jpg.length == 0) {
@@ -4062,6 +4088,73 @@ jobs:
                   sendJson(socket, 404, new JSONObject().put("ok", false).put("error", "Endpoint tidak dikenal"));
               }
           
+              /**
+               * Continuous MJPEG stream. Each client gets its own worker so a long-lived preview
+               * never blocks touch, key, status, or other device requests.
+               */
+              private void streamScreen(Socket socket) throws IOException {
+                  OutputStream out = socket.getOutputStream();
+                  String header = "HTTP/1.1 200 OK\r\n"
+                          + "Content-Type: multipart/x-mixed-replace; boundary=cfmframe\r\n"
+                          + "Cache-Control: no-store, no-cache, must-revalidate\r\n"
+                          + "Pragma: no-cache\r\n"
+                          + "Connection: keep-alive\r\n"
+                          + "Access-Control-Allow-Origin: *\r\n\r\n";
+                  out.write(header.getBytes(StandardCharsets.US_ASCII));
+                  out.flush();
+          
+                  // Detect when the browser closes its <img> connection, even if the screen is static.
+                  Thread disconnectWatcher = new Thread(() -> {
+                      try {
+                          InputStream in = socket.getInputStream();
+                          while (!socket.isClosed()) {
+                              try {
+                                  if (in.read() < 0) break;
+                              } catch (java.net.SocketTimeoutException timeout) {
+                                  // Recheck whether the client is still connected.
+                              }
+                          }
+                      } catch (Exception ignored) {
+                      } finally {
+                          try { socket.close(); } catch (Exception ignored) { }
+                      }
+                  }, "CFM-Farm-Stream-Watch");
+                  disconnectWatcher.setDaemon(true);
+                  disconnectWatcher.start();
+          
+                  long sentSequence = -1L;
+                  long lastWriteAt = 0L;
+                  while (!stopping && !socket.isClosed()) {
+                      long sequence = frameSequence;
+                      byte[] frame = latestJpeg;
+                      long now = System.currentTimeMillis();
+          
+                      // Send new frames immediately. A low-rate duplicate also keeps stale views
+                      // alive on devices whose screen content is temporarily static.
+                      if (frame != null && frame.length > 0
+                              && (sequence != sentSequence || now - lastWriteAt >= 2000L)) {
+                          String part = "--cfmframe\r\n"
+                                  + "Content-Type: image/jpeg\r\n"
+                                  + "Content-Length: " + frame.length + "\r\n"
+                                  + "X-Sequence: " + sequence + "\r\n\r\n";
+                          out.write(part.getBytes(StandardCharsets.US_ASCII));
+                          out.write(frame);
+                          out.write("\r\n".getBytes(StandardCharsets.US_ASCII));
+                          out.flush();
+                          sentSequence = sequence;
+                          lastWriteAt = now;
+                      } else {
+                          if (!captureReady && now - lastWriteAt > 1200L) break;
+                          try {
+                              Thread.sleep(12L);
+                          } catch (InterruptedException e) {
+                              Thread.currentThread().interrupt();
+                              break;
+                          }
+                      }
+                  }
+              }
+          
               private boolean authorized(Request r, Map<String, String> query) {
                   String token = query.get("token");
                   String auth = r.headers.get("authorization");
@@ -4098,7 +4191,7 @@ jobs:
                   o.put("id", deviceIdFor(this));
                   o.put("name", Build.MODEL == null ? "Android" : Build.MODEL);
                   o.put("android", Build.VERSION.RELEASE == null ? "" : Build.VERSION.RELEASE);
-                  o.put("version", "1.0");
+                  o.put("version", "1.1");
                   o.put("screen", latestJpeg != null && latestJpeg.length > 0);
                   o.put("accessibility", FarmAccessibilityService.isConnected());
                   o.put("battery", batteryPercent());
@@ -4128,13 +4221,12 @@ jobs:
                       screenWidth = Math.max(1, dm.widthPixels);
                       screenHeight = Math.max(1, dm.heightPixels);
                       screenDensity = dm.densityDpi;
-                      imageReader = ImageReader.newInstance(screenWidth, screenHeight, PixelFormat.RGBA_8888, 2);
+                      imageReader = ImageReader.newInstance(screenWidth, screenHeight, PixelFormat.RGBA_8888, 3);
                       captureThread = new HandlerThread("CFM-Farm-Capture");
                       captureThread.start();
                       imageReader.setOnImageAvailableListener(reader -> captureLatest(reader), new Handler(captureThread.getLooper()));
-                      virtualDisplay = projection.createVirtualDisplay("CFM Phone Farm", screenWidth, screenHeight,
-                              screenDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, imageReader.getSurface(), null, null);
                       final MediaProjection sessionProjection = projection;
+                      // Android 14+ requires registering the callback before creating the virtual display.
                       sessionProjection.registerCallback(new MediaProjection.Callback() {
                           @Override public void onStop() {
                               if (projection != sessionProjection) return;
@@ -4150,6 +4242,8 @@ jobs:
                               projection = null;
                           }
                       }, new Handler(Looper.getMainLooper()));
+                      virtualDisplay = projection.createVirtualDisplay("CFM Phone Farm", screenWidth, screenHeight,
+                              screenDensity, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, imageReader.getSurface(), null, null);
                       captureReady = true;
                   } catch (Exception e) {
                       stopCapture();
@@ -4160,7 +4254,7 @@ jobs:
           
               private void captureLatest(ImageReader reader) {
                   long now = System.currentTimeMillis();
-                  if (now - lastFrameAt < 700) {
+                  if (now - lastFrameAt < 110) {
                       Image skip = reader.acquireLatestImage();
                       if (skip != null) skip.close();
                       return;
@@ -4170,7 +4264,6 @@ jobs:
                   try {
                       image = reader.acquireLatestImage();
                       if (image == null) return;
-                      lastFrameAt = now;
                       Image.Plane[] planes = image.getPlanes();
                       if (planes == null || planes.length == 0) return;
                       java.nio.ByteBuffer buffer = planes[0].getBuffer();
@@ -4182,12 +4275,14 @@ jobs:
                       buffer.rewind();
                       padded.copyPixelsFromBuffer(buffer);
                       raw = Bitmap.createBitmap(padded, 0, 0, screenWidth, screenHeight);
-                      int outW = Math.min(540, screenWidth);
+                      int outW = Math.min(640, screenWidth);
                       int outH = Math.max(1, Math.round(screenHeight * (outW / (float) screenWidth)));
                       scaled = Bitmap.createScaledBitmap(raw, outW, outH, true);
                       ByteArrayOutputStream out = new ByteArrayOutputStream();
-                      scaled.compress(Bitmap.CompressFormat.JPEG, 42, out);
+                      scaled.compress(Bitmap.CompressFormat.JPEG, 50, out);
                       latestJpeg = out.toByteArray();
+                      lastFrameAt = System.currentTimeMillis();
+                      frameSequence++;
                   } catch (Exception ignored) {
                   } finally {
                       if (image != null) image.close();
@@ -4273,6 +4368,9 @@ jobs:
                   try { if (serverSocket != null) serverSocket.close(); } catch (Exception ignored) { }
                   stopCapture();
                   if (active == this) active = null;
+                  ExecutorService pool = clientPool;
+                  clientPool = null;
+                  if (pool != null) pool.shutdownNow();
                   stopForeground(true);
                   super.onDestroy();
               }
@@ -4403,110 +4501,274 @@ jobs:
           <meta name="cfm-id" content="phone-farm">
           <meta name="cfm-name" content="Phone Farm">
           <meta name="cfm-icon" content="📱">
-          <meta name="cfm-version" content="1.0">
+          <meta name="cfm-version" content="1.1">
           <meta name="cfm-order" content="8">
           <meta name="cfm-ui" content="1">
-          <title>Phone Farm</title>
+          <title>CFM Farm Control</title>
           <style>
-          .page{padding-bottom:42px}.panel{margin:12px 0}.section-title{font-weight:700;font-size:15px;margin:0 0 8px}
-          .field{display:block;margin:10px 0 6px;color:var(--dim);font-size:12px}
-          .input{margin:0 0 8px}.actions{display:flex;flex-wrap:wrap;gap:8px}.statusline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin:8px 0}.statusdot{width:8px;height:8px;border-radius:50%;background:var(--mute);display:inline-block;flex:none}.statusdot.ok{background:var(--ok)}.statusdot.bad{background:var(--bad)}.device{display:flex;gap:12px;align-items:center;margin:8px 0;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:16px}.device .tile{font-size:22px}.device .meta{flex:1;min-width:0}.device .name{font-weight:700;overflow-wrap:anywhere}.device .sub{overflow-wrap:anywhere}.device .actions{margin-top:8px}.remote-screen{width:100%;height:auto;display:block;border-radius:12px;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}.screen-wrap{background:#050608;border:1px solid var(--line);border-radius:14px;padding:6px;overflow:hidden}.token{font-family:var(--mono);font-size:13px;letter-spacing:.08em;overflow-wrap:anywhere;color:var(--acc)}.small{font-size:12px;color:var(--dim)}.danger-note{border-left:3px solid var(--warn);padding:8px 10px;color:var(--dim);font-size:12px;background:var(--surface);border-radius:0 8px 8px 0}.hide{display:none!important}
+          :root{
+            --farm-bg:#0a0d13;--farm-panel:#111722;--farm-panel2:#151e2c;--farm-line:#273348;
+            --farm-text:#edf3ff;--farm-muted:#8998b2;--farm-blue:#7aa7ff;--farm-blue2:#4779f5;
+            --farm-green:#4fe0a1;--farm-red:#ff707e;--farm-amber:#ffc66d;
+          }
+          .farm-app{max-width:1240px;margin:0 auto;padding:18px 16px 44px;color:var(--farm-text)}
+          .farm-app *{box-sizing:border-box}
+          .farm-app .hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:20px;overflow:hidden;padding:25px 24px;margin:0 0 16px;border:1px solid #293952;border-radius:24px;background:linear-gradient(112deg,#17253a 0%,#111925 52%,#131b2a 100%);box-shadow:0 18px 48px #0003}
+          .farm-app .hero:before{content:"";position:absolute;z-index:-1;width:340px;height:340px;right:6%;top:-210px;border-radius:50%;background:radial-gradient(circle,#4e83ff55 0%,#4e83ff00 70%);pointer-events:none}
+          .farm-app .hero:after{content:"";position:absolute;z-index:-1;width:240px;height:240px;right:-70px;bottom:-175px;border-radius:50%;border:1px solid #83aaff25;box-shadow:0 0 0 26px #83aaff08,0 0 0 52px #83aaff06}
+          .farm-app .eyebrow{display:flex;align-items:center;gap:8px;color:#9cb1d4;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+          .farm-app .live-dot{display:inline-block;width:7px;height:7px;flex:none;border-radius:50%;background:var(--farm-green);box-shadow:0 0 0 4px #4fe0a11c}
+          .farm-app .h1{margin:10px 0 7px!important;color:var(--farm-text)!important;font-size:clamp(28px,5vw,40px)!important;line-height:1.05!important;letter-spacing:-.045em!important;font-weight:850!important}
+          .farm-app .h1 span{color:var(--farm-blue)}
+          .farm-app .sub{margin:0!important;color:#a1afc5!important;font-size:13px!important;line-height:1.65!important;max-width:560px}
+          .farm-app .hero-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
+          .farm-app .hero-tag{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid #34445d;border-radius:999px;background:#0d1521a8;color:#c5d3e8;font-size:10px;font-weight:700;letter-spacing:.02em}
+          .farm-app .hero-mark{display:flex;align-items:center;justify-content:center;position:relative;flex:none;width:94px;height:112px;margin:0 18px 0 0}
+          .farm-app .hero-phone{position:absolute;width:50px;height:88px;border:2px solid #8bb2ff;border-radius:11px;background:linear-gradient(150deg,#243d60,#0c1421);box-shadow:0 12px 28px #0005}
+          .farm-app .hero-phone:before{content:"";position:absolute;left:50%;top:5px;transform:translateX(-50%);width:14px;height:3px;border-radius:4px;background:#8bb2ff99}
+          .farm-app .hero-phone:after{content:"";position:absolute;inset:17px 6px 7px;border-radius:5px;background:linear-gradient(160deg,#7aa7ff44,#4fe0a10c);border:1px solid #91b5ff25}
+          .farm-app .hero-phone.back{transform:translate(-18px,8px) rotate(-11deg);opacity:.55}
+          .farm-app .hero-phone.front{transform:translate(14px,-3px) rotate(9deg)}
+          .farm-app .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
+          .farm-app .metric{position:relative;overflow:hidden;min-width:0;padding:15px 16px;border:1px solid var(--farm-line);border-radius:17px;background:linear-gradient(145deg,#151d2a,#101620)}
+          .farm-app .metric:after{content:"";position:absolute;width:90px;height:90px;right:-42px;bottom:-50px;border-radius:50%;background:#7aa7ff0c}
+          .farm-app .metric-label{display:block;color:var(--farm-muted);font-size:11px;font-weight:700}
+          .farm-app .metric-number{display:block;margin:7px 0 4px;color:var(--farm-text);font-size:28px;font-weight:850;letter-spacing:-.05em;line-height:1}
+          .farm-app .metric-foot{display:block;color:#6f7f99;font-size:10px}
+          .farm-app .metric-icon{position:absolute;right:14px;top:14px;color:#88adf5;font-size:17px}
+          .farm-app .panel{margin:0 0 16px;padding:19px;border:1px solid var(--farm-line)!important;border-radius:20px!important;background:linear-gradient(145deg,#141c29,#10151f)!important;box-shadow:0 12px 28px #0002}
+          .farm-app .panel-head,.farm-app .section-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+          .farm-app h2{margin:5px 0 4px;color:var(--farm-text);font-size:18px;line-height:1.2;letter-spacing:-.025em}
+          .farm-app .panel-desc{margin:0;color:var(--farm-muted);font-size:12px;line-height:1.55}
+          .farm-app .status-pill,.farm-app .stream-badge{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:7px 10px;border:1px solid #2d3a4f;border-radius:999px;background:#0c131e;color:#aebbd0;font-size:10px;font-weight:800;white-space:nowrap}
+          .farm-app .statusdot{display:inline-block;width:7px;height:7px;flex:none;border-radius:50%;background:#718096}
+          .farm-app .statusdot.ok{background:var(--farm-green);box-shadow:0 0 0 4px #4fe0a112}
+          .farm-app .statusdot.bad{background:var(--farm-red);box-shadow:0 0 0 4px #ff707e12}
+          .farm-app .agent-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+          .farm-app .agent-box{padding:15px;border:1px solid #263248;border-radius:15px;background:#0d131d}
+          .farm-app .agent-box-title{margin:0 0 12px;color:#dbe5f6;font-size:12px;font-weight:800}
+          .farm-app .actions{display:flex;flex-wrap:wrap;gap:7px}
+          .farm-app .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:9px 12px;border:1px solid #33425a!important;border-radius:11px!important;background:#192334!important;color:#dce7f8!important;font-size:11px!important;font-weight:750!important;line-height:1.2;text-decoration:none;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+          .farm-app .btn:hover{border-color:#6686c2!important;background:#202e44!important;transform:translateY(-1px)}
+          .farm-app .btn:active{transform:translateY(0)}
+          .farm-app .btn.pri{border-color:#5d8cff!important;background:linear-gradient(135deg,#5a8bff,#3f6eea)!important;color:white!important;box-shadow:0 6px 16px #4779f52b}
+          .farm-app .btn.ghost{background:transparent!important}
+          .farm-app .btn.bad{border-color:#6b3543!important;background:#301a25!important;color:#ff9ba5!important}
+          .farm-app .btn.sm{min-height:31px;padding:7px 9px;border-radius:9px!important;font-size:10px!important}
+          .farm-app .field{display:block;margin:12px 0 6px;color:#8e9fba;font-size:10px;font-weight:750;letter-spacing:.045em}
+          .farm-app .input{display:block;width:100%;min-width:0;min-height:41px;margin:0 0 8px;padding:10px 12px;border:1px solid #2a384d!important;border-radius:11px!important;outline:none;background:#0b111b!important;color:#edf3ff!important;font-size:12px!important;box-shadow:none!important}
+          .farm-app .input::placeholder{color:#5e6c82}
+          .farm-app .input:focus{border-color:#6b94f3!important;box-shadow:0 0 0 3px #7aa7ff18!important}
+          .farm-app .small{color:#8392aa;font-size:11px;line-height:1.55}
+          .farm-app .token{display:block;padding:10px 11px;border:1px dashed #344766;border-radius:10px;background:#111a29;color:#9fc0ff;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;letter-spacing:.08em;overflow-wrap:anywhere}
+          .farm-app .agent-details{display:grid;grid-template-columns:1fr;gap:9px}
+          .farm-app .detail-label{display:block;margin-bottom:5px;color:#71819a;font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.08em}
+          .farm-app .detail-value{color:#cbd7e9;font-size:12px;overflow-wrap:anywhere}
+          .farm-app .setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+          .farm-app .setup-grid .panel{height:100%}
+          .farm-app .divider{height:1px;margin:15px 0;background:#263248}
+          .farm-app .scan-line{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px}
+          .farm-app .devices-panel{margin:0 0 16px}
+          .farm-app .device-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+          .farm-app .device-card{min-width:0;padding:14px;border:1px solid #29364a;border-radius:16px;background:linear-gradient(145deg,#151e2c,#0f151f);transition:border-color .15s ease,transform .15s ease}
+          .farm-app .device-card:hover{border-color:#4c648a;transform:translateY(-1px)}
+          .farm-app .device-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+          .farm-app .device-icon{display:flex;align-items:center;justify-content:center;width:39px;height:39px;border:1px solid #344663;border-radius:12px;background:linear-gradient(145deg,#22344f,#121d2c);font-size:20px}
+          .farm-app .state-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:800}
+          .farm-app .state-tag.online{background:#123329;color:#73edb7}
+          .farm-app .state-tag.offline{background:#321d27;color:#ff9ba5}
+          .farm-app .state-tag .statusdot{width:5px;height:5px}
+          .farm-app .device-name{margin:12px 0 3px;color:#edf3ff;font-size:14px;font-weight:800;overflow-wrap:anywhere}
+          .farm-app .device-ip{color:#7788a3;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;overflow-wrap:anywhere}
+          .farm-app .device-meta-row{display:flex;justify-content:space-between;gap:10px;margin:13px 0 6px;color:#7f8ea6;font-size:10px}
+          .farm-app .device-meta-row b{color:#cbd8eb;font-size:10px}
+          .farm-app .battery-track{height:4px;overflow:hidden;border-radius:99px;background:#263247}
+          .farm-app .battery-track span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4779f5,#4fe0a1)}
+          .farm-app .device-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}
+          .farm-app .empty{display:flex;flex-direction:column;align-items:center;gap:7px;padding:28px 14px;border:1px dashed #2d3b51;border-radius:16px;background:#0e141e;color:#8291aa;text-align:center;font-size:11px;line-height:1.55}
+          .farm-app .empty .big{font-size:28px}
+          .farm-app .empty b{color:#e3ebf8;font-size:14px}
+          .farm-app .remote-panel{padding:18px}
+          .farm-app .remote-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,.8fr);gap:14px;align-items:start}
+          .farm-app .viewer-panel{min-width:0;padding:12px;border:1px solid #29364a;border-radius:16px;background:#090d14}
+          .farm-app .viewer-toolbar,.farm-app .viewer-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+          .farm-app .viewer-toolbar{padding:1px 2px 11px}
+          .farm-app .viewer-label{display:flex;align-items:center;gap:8px;color:#b9c8df;font-size:10px;font-weight:850;letter-spacing:.08em}
+          .farm-app .stream-badge{padding:5px 8px;font-size:9px}
+          .farm-app .stream-badge.live{border-color:#235640;background:#102b22;color:#6fe7b0}
+          .farm-app .stream-badge.connecting{border-color:#5b482b;background:#292116;color:#ffd18b}
+          .farm-app .screen-wrap{position:relative;display:flex;align-items:center;justify-content:center;min-height:220px;max-height:72vh;overflow:hidden;padding:8px;border:1px solid #1d293b;border-radius:12px;background:radial-gradient(ellipse at center,#151e2a,#06090e 75%)}
+          .farm-app .remote-screen{display:block;width:auto;height:auto;max-width:100%;max-height:68vh;border-radius:7px;background:#000;object-fit:contain;touch-action:none;user-select:none;-webkit-user-select:none}
+          .farm-app .screen-message{position:absolute;left:12px;right:12px;bottom:12px;padding:9px 11px;border:1px solid #2d3b51;border-radius:10px;background:#101824eF;color:#a6b6ce;font-size:11px;text-align:center;pointer-events:none}
+          .farm-app .viewer-footer{padding:11px 2px 1px;color:#6f7f98;font-size:10px}
+          .farm-app .control-panel{padding:15px;border:1px solid #29364a;border-radius:16px;background:#101722}
+          .farm-app .section-title{margin:0 0 11px;color:#e2ebfa;font-size:13px;font-weight:850}
+          .farm-app .control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+          .farm-app .control-grid .btn{min-height:43px}
+          .farm-app .control-grid .wide{grid-column:1/-1}
+          .farm-app .control-divider{height:1px;margin:14px 0;background:#283448}
+          .farm-app .danger-note{margin-top:15px;padding:10px 12px;border:1px solid #4c3e2a;border-left:3px solid var(--farm-amber);border-radius:10px;background:#201b14;color:#b4a58b;font-size:10px;line-height:1.6}
+          .farm-app .footer-note{padding:4px 3px;color:#5e6e87;font-size:10px;line-height:1.6;text-align:center}
+          .farm-app .hide{display:none!important}
+          @media(max-width:760px){
+            .farm-app{padding:12px 10px 32px}
+            .farm-app .hero{padding:20px 17px;border-radius:20px}
+            .farm-app .hero-mark{width:65px;height:90px;margin-right:2px}
+            .farm-app .hero-phone{width:40px;height:72px}
+            .farm-app .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+            .farm-app .agent-grid,.farm-app .setup-grid{grid-template-columns:1fr}
+            .farm-app .remote-layout{grid-template-columns:1fr}
+            .farm-app .remote-panel,.farm-app .panel{padding:14px}
+            .farm-app .screen-wrap{min-height:190px}
+          }
+          @media(max-width:460px){
+            .farm-app .hero-mark{display:none}
+            .farm-app .device-grid{grid-template-columns:1fr}
+            .farm-app .panel-head,.farm-app .section-bar{align-items:flex-start}
+            .farm-app .panel-head .status-pill{max-width:45%;white-space:normal}
+            .farm-app .metric{padding:13px}
+            .farm-app .metric-number{font-size:25px}
+            .farm-app .device-actions .btn{flex:1}
+          }
+          @media(prefers-reduced-motion:reduce){
+            .farm-app *{scroll-behavior:auto!important;transition:none!important}
+          }
           </style>
           </head>
           <body>
-          <main class="page">
-            <h1 class="h1">Phone Farm</h1>
-            <p class="sub">Dashboard lokal untuk HP yang terhubung ke hotspot/Wi-Fi yang sama.</p>
-          
-            <section class="card panel">
-              <div class="row">
-                <div class="tile">📲</div>
-                <div class="grow">
-                  <div class="section-title">Agent perangkat ini</div>
-                  <div class="small">Aktifkan bagian ini di setiap HP farm yang ingin dikontrol.</div>
+          <main class="page farm-app">
+            <section class="hero">
+              <div class="hero-copy">
+                <div class="eyebrow"><span class="live-dot"></span> CFM · LOCAL DEVICE ORCHESTRATION</div>
+                <h1 class="h1">Farm <span>Control</span></h1>
+                <p class="sub">Satu ruang kendali untuk memantau perangkat, membuka layar langsung, dan mengirim perintah lewat jaringan lokal.</p>
+                <div class="hero-tags">
+                  <span class="hero-tag">⌁ Local network</span>
+                  <span class="hero-tag">◉ Live screen stream</span>
+                  <span class="hero-tag">⌘ Remote actions</span>
                 </div>
               </div>
-              <div class="statusline"><span id="agentDot" class="statusdot"></span><span id="agentState">Memeriksa status…</span></div>
-              <div class="actions">
-                <button class="btn pri" id="agentStart">Aktifkan agent</button>
-                <button class="btn" id="agentCapture">Izinkan layar</button>
-                <button class="btn" id="agentAccess">Atur Aksesibilitas</button>
-              </div>
-              <div class="field">Alamat IP perangkat ini</div>
-              <div id="agentIps" class="small">Belum terdeteksi</div>
-              <div class="field">Token kontrol (jangan bagikan ke orang lain)</div>
-              <div id="agentToken" class="token">—</div>
-              <div class="actions" style="margin-top:10px">
-                <button class="btn sm ghost" id="copyToken">Salin token</button>
-                <button class="btn sm ghost" id="agentRefresh">Perbarui status</button>
-                <button class="btn sm bad" id="agentStop">Matikan agent</button>
-              </div>
-              <p class="small">Aksesibilitas dan izin berbagi layar harus disetujui manual di HP ini. Saat meminta layar, Android akan menampilkan konfirmasi sistem.</p>
+              <div class="hero-mark" aria-hidden="true"><div class="hero-phone back"></div><div class="hero-phone front"></div></div>
             </section>
           
-            <section class="card panel">
-              <div class="section-title">Tambah perangkat ke dashboard</div>
-              <label class="field" for="devName">Nama perangkat (opsional)</label>
-              <input class="input" id="devName" placeholder="Contoh: HP 01" autocomplete="off">
-              <label class="field" for="devIp">IP perangkat farm</label>
-              <input class="input" id="devIp" placeholder="Contoh: 192.168.43.25" inputmode="decimal" autocomplete="off">
-              <label class="field" for="devToken">Token dari HP farm</label>
-              <input class="input" id="devToken" placeholder="Tempel token 16 karakter" autocomplete="off" autocapitalize="none">
-              <div class="actions">
-                <button class="btn pri" id="addDevice">Tambah perangkat</button>
-                <button class="btn" id="refreshAll">Cek semua</button>
-              </div>
-              <div class="divider"></div>
-              <div class="section-title">Pencarian jaringan lokal</div>
-              <p class="small">Pemindaian hanya mengecek port agent 8765 pada subnet yang kamu masukkan. Pastikan semua HP terhubung ke hotspot yang sama.</p>
-              <label class="field" for="prefix">Prefix subnet (3 bagian awal)</label>
-              <input class="input" id="prefix" value="192.168.43" placeholder="192.168.43" autocomplete="off">
-              <div class="actions">
-                <button class="btn" id="scan">Pindai jaringan</button>
-                <span id="scanState" class="small" style="align-self:center"></span>
-              </div>
+            <section class="stats-grid" aria-label="Ringkasan perangkat">
+              <article class="metric"><span class="metric-label">Total perangkat</span><strong id="statTotal" class="metric-number">0</strong><span class="metric-foot">Terdaftar di dashboard</span><span class="metric-icon">▦</span></article>
+              <article class="metric"><span class="metric-label">Online</span><strong id="statOnline" class="metric-number">0</strong><span class="metric-foot">Agent merespons</span><span class="metric-icon">●</span></article>
+              <article class="metric"><span class="metric-label">Offline</span><strong id="statOffline" class="metric-number">0</strong><span class="metric-foot">Perlu diperiksa</span><span class="metric-icon">◌</span></article>
+              <article class="metric"><span class="metric-label">Stream aktif</span><strong id="statStreams" class="metric-number">0</strong><span class="metric-foot">Preview jarak jauh</span><span class="metric-icon">▣</span></article>
             </section>
           
-            <div class="sec">Perangkat terdaftar</div>
-            <div id="devices"><div class="empty"><div class="big">📱</div><b>Belum ada perangkat</b>Tambahkan IP dan token, atau pindai jaringan lokal.</div></div>
-          
-            <section id="remote" class="card panel hide">
-              <div class="row">
-                <div class="grow">
-                  <div class="section-title" id="remoteName">Kontrol perangkat</div>
-                  <div class="small" id="remoteInfo"></div>
+            <section class="panel">
+              <div class="panel-head">
+                <div><div class="eyebrow">THIS DEVICE</div><h2>Agent lokal</h2><p class="panel-desc">Jalankan agent pada HP yang akan menerima perintah dari controller.</p></div>
+                <div class="status-pill"><span id="agentDot" class="statusdot"></span><span id="agentState">Memeriksa status…</span></div>
+              </div>
+              <div class="agent-grid">
+                <div class="agent-box">
+                  <div class="agent-box-title">Layanan & izin</div>
+                  <div class="actions">
+                    <button class="btn pri" id="agentStart">▶ Aktifkan agent</button>
+                    <button class="btn" id="agentCapture">◉ Izinkan layar</button>
+                    <button class="btn" id="agentAccess">⚙ Aksesibilitas</button>
+                  </div>
+                  <div class="divider"></div>
+                  <p class="small">Izin berbagi layar dan Aksesibilitas Android harus disetujui langsung di perangkat. Streaming aktif selama layanan dan izin layar tersedia.</p>
+                  <div class="actions" style="margin-top:12px">
+                    <button class="btn sm ghost" id="agentRefresh">↻ Perbarui status</button>
+                    <button class="btn sm bad" id="agentStop">■ Matikan agent</button>
+                  </div>
                 </div>
-                <button class="btn sm ghost" id="closeRemote">Tutup</button>
+                <div class="agent-box">
+                  <div class="agent-box-title">Detail koneksi</div>
+                  <div class="agent-details">
+                    <div><span class="detail-label">Alamat IP lokal</span><div id="agentIps" class="detail-value">Mendeteksi jaringan…</div></div>
+                    <div><span class="detail-label">Token kontrol pribadi</span><div id="agentToken" class="token">—</div></div>
+                  </div>
+                  <div class="actions" style="margin-top:10px"><button class="btn sm ghost" id="copyToken">▣ Salin token</button></div>
+                </div>
               </div>
-              <div class="actions" style="margin:10px 0">
-                <button class="btn sm" data-key="back">← Kembali</button>
-                <button class="btn sm" data-key="home">⌂ Home</button>
-                <button class="btn sm" data-key="recents">▢ Recent</button>
-                <button class="btn sm" id="refreshScreen">Segarkan layar</button>
-              </div>
-              <div class="screen-wrap">
-                <img id="screen" class="remote-screen" alt="Tampilan layar HP farm">
-                <div id="screenMessage" class="small" style="padding:10px;text-align:center">Menyambungkan layar…</div>
-              </div>
-              <p class="small">Ketuk layar untuk tap. Geser jari di gambar untuk swipe. Kecepatan layar bergantung pada jaringan dan perangkat.</p>
-              <label class="field" for="sendText">Kirim teks ke kolom yang sedang aktif</label>
-              <input class="input" id="sendText" placeholder="Teks yang akan dimasukkan" autocomplete="off">
-              <div class="actions"><button class="btn pri" id="sendTextBtn">Kirim teks</button></div>
-              <div id="controlState" class="small" style="margin-top:8px"></div>
             </section>
           
-            <div class="danger-note">Keamanan: token diperlukan untuk perintah dan tampilan layar. Gunakan hanya di jaringan milikmu dan jangan kirim token ke orang lain. Ini kontrol dasar; beberapa aplikasi/layer aman Android dapat membatasi kontrol jarak jauh.</div>
+            <div class="setup-grid">
+              <section class="panel">
+                <div class="eyebrow">PAIRING</div><h2>Tambah perangkat</h2><p class="panel-desc">Masukkan IP dan token yang tampil pada HP tujuan.</p>
+                <label class="field" for="devName">Nama perangkat (opsional)</label>
+                <input class="input" id="devName" placeholder="Contoh: Farm 01" autocomplete="off">
+                <label class="field" for="devIp">Alamat IP perangkat</label>
+                <input class="input" id="devIp" placeholder="192.168.43.25" inputmode="decimal" autocomplete="off">
+                <label class="field" for="devToken">Token dari HP tujuan</label>
+                <input class="input" id="devToken" placeholder="Tempel token autentikasi" autocomplete="off" autocapitalize="none">
+                <div class="actions"><button class="btn pri" id="addDevice">＋ Tambah perangkat</button><button class="btn" id="refreshAll">↻ Cek semua</button></div>
+              </section>
+              <section class="panel">
+                <div class="eyebrow">NETWORK DISCOVERY</div><h2>Pindai jaringan lokal</h2><p class="panel-desc">Cari agent CFM di subnet Wi-Fi atau hotspot yang sama.</p>
+                <label class="field" for="prefix">Prefix subnet (3 bagian awal)</label>
+                <input class="input" id="prefix" value="192.168.43" placeholder="192.168.43" autocomplete="off">
+                <div class="scan-line"><button class="btn" id="scan">⌕ Pindai jaringan</button><span id="scanState" class="small">Siap memindai port 8765.</span></div>
+                <div class="divider"></div>
+                <p class="small">Pastikan hanya memindai jaringan yang kamu miliki atau berwenang kelola. Perangkat yang ditemukan tetap memerlukan token untuk kontrol.</p>
+              </section>
+            </div>
+          
+            <section class="devices-panel">
+              <div class="section-bar">
+                <div><div class="eyebrow">FLEET OVERVIEW</div><h2>Perangkat terdaftar</h2><p class="panel-desc">Pilih perangkat untuk membuka preview dan kontrol jarak jauh.</p></div>
+                <span class="status-pill"><span class="live-dot"></span> Local fleet</span>
+              </div>
+              <div id="devices" class="device-grid"><div class="empty"><div class="big">▦</div><b>Belum ada perangkat</b>Tambahkan IP dan token atau pindai jaringan lokal.</div></div>
+            </section>
+          
+            <section id="remote" class="panel remote-panel hide">
+              <div class="panel-head">
+                <div><div class="eyebrow">REMOTE SESSION</div><h2 id="remoteName">Kontrol perangkat</h2><p class="panel-desc" id="remoteInfo"></p></div>
+                <button class="btn sm ghost" id="closeRemote">✕ Tutup</button>
+              </div>
+              <div class="remote-layout">
+                <div class="viewer-panel">
+                  <div class="viewer-toolbar">
+                    <div class="viewer-label"><span class="live-dot"></span> LIVE SCREEN PREVIEW</div>
+                    <span id="streamBadge" class="stream-badge">OFFLINE</span>
+                  </div>
+                  <div class="screen-wrap">
+                    <img id="screen" class="remote-screen" alt="Tampilan layar HP farm" draggable="false">
+                    <div id="screenMessage" class="screen-message">Pilih perangkat untuk memulai streaming layar.</div>
+                  </div>
+                  <div class="viewer-footer"><span>MJPEG · jaringan lokal · tap / swipe aktif</span><button class="btn sm" id="refreshScreen">↻ Sambungkan ulang</button></div>
+                </div>
+                <aside class="control-panel">
+                  <div class="section-title">Remote controls</div>
+                  <div class="control-grid">
+                    <button class="btn" data-key="back">← Back</button>
+                    <button class="btn" data-key="home">⌂ Home</button>
+                    <button class="btn" data-key="recents">▢ Recent</button>
+                    <button class="btn" data-key="notifications">☰ Notifikasi</button>
+                  </div>
+                  <div class="control-divider"></div>
+                  <div class="section-title">Kirim teks</div>
+                  <label class="field" for="sendText">Teks ke kolom yang sedang aktif</label>
+                  <input class="input" id="sendText" placeholder="Ketik teks…" autocomplete="off">
+                  <button class="btn pri wide" id="sendTextBtn" style="width:100%">➤ Kirim teks</button>
+                  <div id="controlState" class="small" style="margin-top:10px">Perintah akan dikirim ke perangkat terpilih.</div>
+                </aside>
+              </div>
+            </section>
+          
+            <div class="danger-note">Keamanan: token diperlukan untuk streaming dan perintah. Jangan bagikan token atau gunakan controller di jaringan yang tidak dipercaya. Izin Android tetap dikendalikan oleh pemilik perangkat.</div>
+            <div class="footer-note">CFM FARM CONTROL · Dashboard lokal · Streaming bergantung pada perangkat dan kualitas jaringan</div>
           </main>
+          
           <script>
           (function(){
             const $ = id => document.getElementById(id);
-            let devices = [], selectedId = null, pollTimer = null, polling = false, scanning = false;
+            let devices = [], selectedId = null, streamGeneration = 0, reconnectTimer = null, scanning = false, streamActive = false;
             const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             const byId = id => devices.find(d => d.id === id);
+          
             const setAgentStatus = (text, kind) => {
               $('agentState').textContent = text;
               $('agentDot').className = 'statusdot ' + (kind || '');
             };
+          
             async function api(ip, token, path, method, body, timeout) {
               const opts = {method:method || 'GET', timeout:timeout || 5000, headers:{'Content-Type':'application/json'}};
               if (token) opts.headers.Authorization = 'Bearer ' + token;
@@ -4517,7 +4779,16 @@ jobs:
               if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
               return j;
             }
+          
             async function saveDevices(){ await CFM.set('farm_devices', JSON.stringify(devices)); }
+          
+            function renderStats(){
+              $('statTotal').textContent = devices.length;
+              $('statOnline').textContent = devices.filter(d=>d.online).length;
+              $('statOffline').textContent = devices.filter(d=>!d.online).length;
+              $('statStreams').textContent = streamActive ? '1' : '0';
+            }
+          
             async function loadDevices(){
               try { const s = await CFM.get('farm_devices'); devices = s ? JSON.parse(s) : []; if (!Array.isArray(devices)) devices=[]; }
               catch(e){ devices=[]; }
@@ -4525,18 +4796,32 @@ jobs:
               renderDevices();
               refreshAll();
             }
+          
             function renderDevices(){
-              if(!devices.length){$('devices').innerHTML='<div class="empty"><div class="big">📱</div><b>Belum ada perangkat</b>Tambahkan IP dan token, atau pindai jaringan lokal.</div>';return;}
+              renderStats();
+              if(!devices.length){
+                $('devices').innerHTML='<div class="empty"><div class="big">▦</div><b>Belum ada perangkat</b>Tambahkan IP dan token atau pindai jaringan lokal.</div>';
+                return;
+              }
               $('devices').innerHTML = devices.map(d=>{
                 const online = d.online;
-                const status = online ? ('Online' + (d.battery >= 0 ? ' · Baterai '+d.battery+'%' : '')) : 'Belum terhubung';
-                return '<div class="device"><div class="tile">📱</div><div class="meta"><div class="name">'+esc(d.name||d.model||'HP '+d.ip)+'</div><div class="sub">'+esc(d.ip)+':8765 · '+esc(status)+'</div><div class="actions"><button class="btn sm pri" data-connect="'+esc(d.id)+'">Kontrol</button><button class="btn sm" data-token="'+esc(d.id)+'">Token</button><button class="btn sm ghost" data-check="'+esc(d.id)+'">Cek</button><button class="btn sm bad" data-remove="'+esc(d.id)+'">Hapus</button></div></div><span class="statusdot '+(online?'ok':'bad')+'"></span></div>';
+                const battery = Number.isFinite(+d.battery) ? Math.max(0,Math.min(100,+d.battery)) : -1;
+                const label = d.name || d.model || ('HP '+d.ip);
+                const status = online ? 'ONLINE' : 'OFFLINE';
+                return '<article class="device-card">'
+                  +'<div class="device-top"><div class="device-icon">📱</div><span class="state-tag '+(online?'online':'offline')+'"><span class="statusdot '+(online?'ok':'bad')+'"></span>'+status+'</span></div>'
+                  +'<div class="device-name">'+esc(label)+'</div><div class="device-ip">'+esc(d.ip)+':8765</div>'
+                  +'<div class="device-meta-row"><span>Baterai</span><b>'+(battery>=0?battery+'%':'Tidak diketahui')+'</b></div>'
+                  +'<div class="battery-track"><span style="width:'+(battery>=0?battery:0)+'%"></span></div>'
+                  +'<div class="device-actions"><button class="btn sm pri" data-connect="'+esc(d.id)+'">▣ Kontrol</button><button class="btn sm" data-token="'+esc(d.id)+'">Token</button><button class="btn sm ghost" data-check="'+esc(d.id)+'">Cek</button><button class="btn sm bad" data-remove="'+esc(d.id)+'">Hapus</button></div>'
+                  +'</article>';
               }).join('');
               $('devices').querySelectorAll('[data-connect]').forEach(b=>b.onclick=()=>connectDevice(b.dataset.connect));
               $('devices').querySelectorAll('[data-token]').forEach(b=>b.onclick=()=>editToken(b.dataset.token));
               $('devices').querySelectorAll('[data-check]').forEach(b=>b.onclick=()=>refreshDevice(b.dataset.check));
               $('devices').querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeDevice(b.dataset.remove));
             }
+          
             async function refreshAgent(){
               try{
                 const info = await CFM.agentInfo();
@@ -4547,6 +4832,7 @@ jobs:
                 if(info.screenReady) $('agentState').textContent += ' · Layar siap';
               }catch(e){setAgentStatus('Tidak dapat membaca status agent','bad');}
             }
+          
             async function refreshDevice(id){
               const d=byId(id); if(!d)return;
               try{
@@ -4556,9 +4842,12 @@ jobs:
               }catch(e){d.online=false;d.battery=-1;}
               await saveDevices();renderDevices();
             }
+          
             async function refreshAll(){
               await Promise.all(devices.map(d=>refreshDevice(d.id)));
+              renderDevices();
             }
+          
             async function addOne(ip, token, name){
               ip=String(ip||'').trim(); token=String(token||'').trim(); name=String(name||'').trim();
               if(!/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)){throw new Error('Format IP tidak valid');}
@@ -4568,27 +4857,33 @@ jobs:
               else {d={id:'d-'+Date.now()+'-'+Math.random().toString(16).slice(2,6),ip,token,name,online:false,battery:-1};devices.push(d);}
               await saveDevices();renderDevices();await refreshDevice(d.id);
             }
+          
             $('addDevice').onclick=async()=>{
               try{await addOne($('devIp').value,$('devToken').value,$('devName').value);$('devIp').value='';$('devToken').value='';$('devName').value='';$('scanState').textContent='Perangkat disimpan.';}
               catch(e){alert(e.message||String(e));}
             };
+          
             async function editToken(id){
               const d=byId(id);if(!d)return;
               const t=prompt('Masukkan token dari HP '+d.ip, d.token||'');
               if(t===null)return;d.token=t.trim();await saveDevices();renderDevices();
+              if(selectedId===id)refreshScreen();
             }
+          
             async function removeDevice(id){
               if(!confirm('Hapus perangkat ini dari daftar?'))return;
               devices=devices.filter(d=>d.id!==id);await saveDevices();renderDevices();
               if(selectedId===id)closeRemote();
             }
+          
             $('refreshAll').onclick=refreshAll;
             $('agentStart').onclick=async()=>{try{await CFM.agentStart();setAgentStatus('Mengaktifkan agent…');setTimeout(refreshAgent,900);setTimeout(refreshAgent,2200);}catch(e){alert(e.message||String(e));}};
-            $('agentCapture').onclick=async()=>{try{await CFM.agentCapture();setAgentStatus('Menunggu izin berbagi layar Android…');setTimeout(refreshAgent,1800);setTimeout(refreshAgent,3500);}catch(e){alert(e.message||String(e));}};
+            $('agentCapture').onclick=async()=>{try{await CFM.agentCapture();setAgentStatus('Menunggu izin berbagi layar Android…');setTimeout(refreshAgent,1200);setTimeout(refreshAgent,2800);}catch(e){alert(e.message||String(e));}};
             $('agentAccess').onclick=async()=>{try{await CFM.agentAccessibility();}catch(e){alert(e.message||String(e));}};
             $('agentRefresh').onclick=refreshAgent;
             $('agentStop').onclick=async()=>{if(!confirm('Matikan agent di HP ini?'))return;try{await CFM.agentStop();setTimeout(refreshAgent,500);}catch(e){alert(e.message||String(e));}};
             $('copyToken').onclick=async()=>{try{await CFM.copy($('agentToken').textContent);$('agentState').textContent='Token disalin ke clipboard HP ini.';}catch(e){alert('Gagal menyalin token');}};
+          
             $('scan').onclick=async()=>{
               if(scanning)return;
               const prefix=$('prefix').value.trim();
@@ -4614,57 +4909,121 @@ jobs:
               try{await Promise.all(Array.from({length:12},worker));await saveDevices();renderDevices();$('scanState').textContent='Selesai · '+found+' agent ditemukan. Isi token tiap HP untuk mengontrol.';}
               finally{scanning=false;$('scan').disabled=false;}
             };
+          
             async function connectDevice(id){
               const d=byId(id);if(!d)return;
               if(!d.token){const t=prompt('Masukkan token yang tampil pada HP '+d.ip,'');if(!t)return;d.token=t.trim();await saveDevices();}
-              selectedId=id;$('remote').classList.remove('hide');$('remoteName').textContent=d.name||d.model||d.ip;$('remoteInfo').textContent=d.ip+':8765';
-              $('screen').removeAttribute('src');$('screenMessage').classList.remove('hide');$('screenMessage').textContent='Menghubungkan layar…';$('controlState').textContent='';
-              startPolling();await refreshScreen();
+              selectedId=id;
+              $('remote').classList.remove('hide');
+              $('remoteName').textContent=d.name||d.model||d.ip;
+              $('remoteInfo').textContent=d.ip+':8765 · sesi lokal';
+              $('controlState').textContent='Perintah akan dikirim ke perangkat terpilih.';
+              renderStats();
+              startStream();
               $('remote').scrollIntoView({behavior:'smooth',block:'start'});
             }
-            function startPolling(){stopPolling();pollTimer=setInterval(refreshScreen,1500);}
-            function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}polling=false;}
-            function closeRemote(){stopPolling();selectedId=null;$('remote').classList.add('hide');}
-            $('closeRemote').onclick=closeRemote;
-            async function refreshScreen(){
-              if(polling||!selectedId)return;
-              const d=byId(selectedId);if(!d||!d.token)return;
-              polling=true;
-              try{
-                const j=await api(d.ip,d.token,'/api/screen','GET',null,7000);
-                if(j.jpeg){$('screen').src='data:image/jpeg;base64,'+j.jpeg;$('screenMessage').classList.add('hide');}
-                else $('screenMessage').textContent='Belum ada gambar layar.';
-              }catch(e){
-                $('screenMessage').classList.remove('hide');
-                $('screenMessage').textContent=e.message==='HTTP 503'?'Aktifkan izin berbagi layar pada HP farm.':e.message;
-              }finally{polling=false;}
+          
+            function stopStream(){
+              streamGeneration++;
+              if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+              const img=$('screen');
+              if(img){img.onload=null;img.onerror=null;img.removeAttribute('src');}
+              streamActive=false;
+              $('streamBadge').textContent='OFFLINE';
+              $('streamBadge').className='stream-badge';
+              $('screenMessage').classList.remove('hide');
+              $('screenMessage').textContent='Streaming dihentikan.';
+              renderStats();
             }
+          
+            function startStream(){
+              stopStream();
+              refreshScreen();
+            }
+          
+            function closeRemote(){
+              stopStream();
+              selectedId=null;
+              $('remote').classList.add('hide');
+              renderStats();
+            }
+            $('closeRemote').onclick=closeRemote;
+          
+            function refreshScreen(){
+              if(!selectedId)return;
+              const d=byId(selectedId);
+              if(!d)return;
+              if(!d.token){
+                $('screenMessage').classList.remove('hide');
+                $('screenMessage').textContent='Token belum diisi. Buka Token pada kartu perangkat.';
+                $('streamBadge').textContent='TOKEN REQUIRED';
+                return;
+              }
+              if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+              const img=$('screen');
+              const generation=++streamGeneration;
+              streamActive=false;
+              renderStats();
+              $('screenMessage').classList.remove('hide');
+              $('screenMessage').textContent='Membuka stream real-time…';
+              $('streamBadge').textContent='CONNECTING';
+              $('streamBadge').className='stream-badge connecting';
+              img.onload=()=>{
+                if(generation!==streamGeneration)return;
+                streamActive=true;
+                renderStats();
+                $('screenMessage').classList.add('hide');
+                $('streamBadge').textContent='LIVE · MJPEG';
+                $('streamBadge').className='stream-badge live';
+              };
+              img.onerror=()=>{
+                if(generation!==streamGeneration)return;
+                streamActive=false;
+                renderStats();
+                $('screenMessage').classList.remove('hide');
+                $('screenMessage').textContent='Stream terputus. Memeriksa koneksi dan mencoba kembali…';
+                $('streamBadge').textContent='RECONNECTING';
+                $('streamBadge').className='stream-badge connecting';
+                reconnectTimer=setTimeout(()=>{if(selectedId===d.id)refreshScreen();},1600);
+              };
+              img.src='http://'+d.ip+':8765/api/stream?token='+encodeURIComponent(d.token)+'&v='+Date.now();
+            }
+          
             $('refreshScreen').onclick=refreshScreen;
+          
             async function sendCommand(path, body){
               const d=byId(selectedId);if(!d)return;
-              try{await api(d.ip,d.token,path,'POST',body,5000);$('controlState').textContent='Perintah dikirim.';}
+              try{await api(d.ip,d.token,path,'POST',body,5000);$('controlState').textContent='✓ Perintah berhasil dikirim.';}
               catch(e){$('controlState').textContent='Gagal: '+e.message;}
             }
+          
             document.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>sendCommand('/api/key',{key:b.dataset.key}));
             $('sendTextBtn').onclick=()=>{const v=$('sendText').value;if(!v)return;sendCommand('/api/text',{text:v});};
+          
             let gesture=null;
             $('screen').addEventListener('pointerdown',e=>{
-              if(!selectedId)return;e.preventDefault();const r=$('screen').getBoundingClientRect();
+              if(!selectedId||!$('screen').naturalWidth)return;
+              e.preventDefault();
+              const r=$('screen').getBoundingClientRect();
+              if(!r.width||!r.height)return;
               gesture={x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)),cx:e.clientX,cy:e.clientY};
               try{$('screen').setPointerCapture(e.pointerId);}catch(err){}
             });
             $('screen').addEventListener('pointerup',e=>{
-              if(!gesture)return;const r=$('screen').getBoundingClientRect();
+              if(!gesture)return;
+              const r=$('screen').getBoundingClientRect();
               const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
               const g=gesture;gesture=null;
               const dist=Math.hypot(e.clientX-g.cx,e.clientY-g.cy);
               if(dist<12)sendCommand('/api/tap',{x:g.x,y:g.y});
-              else sendCommand('/api/swipe',{x1:g.x,y1:g.y,x2:x,y2:y,duration:Math.max(120,Math.min(1200,Math.round(dist*1.8)))});
+              else sendCommand('/api/swipe',{x1:g.x,y1:g.y,x2:x,y2:y,duration:Math.max(100,Math.min(1200,Math.round(dist*1.8)))});
             });
             $('screen').addEventListener('pointercancel',()=>{gesture=null;});
-            CFM.on('hide',stopPolling);
-            CFM.on('show',()=>{refreshAgent();refreshAll();if(selectedId)startPolling();});
-            loadDevices();refreshAgent();
+          
+            CFM.on('hide',stopStream);
+            CFM.on('show',()=>{refreshAgent();refreshAll();if(selectedId)startStream();});
+            loadDevices();
+            refreshAgent();
           })();
           </script>
           </body>
